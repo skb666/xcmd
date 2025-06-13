@@ -263,6 +263,13 @@ char *xcmd_history_current(void);
 /**
  * @description: 将历史记录指针指向头部
  * @param {*}
+ * @return 历史命令
+ */
+char *xcmd_history_slider_head(void);
+
+/**
+ * @description: 将历史记录指针复位
+ * @param {*}
  * @return 无
  */
 void xcmd_history_slider_reset(void);

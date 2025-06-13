@@ -29,7 +29,7 @@ static int cmd_help(int argc, char* argv[]) {
 static int cmd_keys(int argc, char* argv[]) {
     xcmd_key_t* p = NULL;
     XCMD_KEY_FOR_EACH(p) {
-        xcmd_print("0x%08X\t", p->key);
+        xcmd_print("0x%08X\t", (uint32_t)(size_t)p->key);
         xcmd_print("%s\r\n", p->help);
     }
     return 0;
@@ -53,13 +53,12 @@ XCMD_EXPORT_CMD(help, cmd_help, "show this list")
 XCMD_EXPORT_CMD(keys, cmd_keys, "show keys")
 XCMD_EXPORT_CMD(logo, cmd_logo, "show logo")
 
-static xcmd_t cmds[] =
-    {
+static xcmd_t cmds[] = {
 #ifndef ENABLE_XCMD_EXPORT
-        {"clear", cmd_clear, "clear screen", NULL},
-        {"help", cmd_help, "show this list", NULL},
-        {"keys", cmd_keys, "show keys", NULL},
-        {"logo", cmd_logo, "show logo", NULL},
+    {"clear", cmd_clear, "clear screen", NULL},
+    {"help", cmd_help, "show this list", NULL},
+    {"keys", cmd_keys, "show keys", NULL},
+    {"logo", cmd_logo, "show logo", NULL},
 #endif
 };
 

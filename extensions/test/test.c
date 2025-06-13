@@ -70,19 +70,11 @@ static int cmd_example(int argc, char* argv[]) {
 }
 
 static int cmd_history(int argc, char* argv[]) {
-    uint16_t len = xcmd_history_len();
+    char *line = xcmd_history_slider_head();
 
-    do {
-        xcmd_history_next();
-    } while (len--);
-
-    while (1) {
-        char* line = xcmd_history_prev();
-        if (line) {
+    while (line) {
             xcmd_print("%s\r\n", line);
-        } else {
-            break;
-        }
+        line = xcmd_history_next();
     }
     return 0;
 }
@@ -144,21 +136,19 @@ XCMD_EXPORT_CMD(history, cmd_history, "show history list")
 XCMD_EXPORT_CMD(example, cmd_example, "example [-f|-i|-s] [val]")
 XCMD_EXPORT_CMD(color, cmd_print_color, "printf color text")
 
-static xcmd_t cmds[] =
-    {
+static xcmd_t cmds[] = {
 #ifndef ENABLE_XCMD_EXPORT
-        {"history", cmd_history, "show history list", NULL},
-        {"example", cmd_example, "example [-f|-i|-s] [val]", NULL},
-        {"delcmd", cmd_delete_cmd, "delete cmd [val]", NULL},
-        {"delkey", cmd_delete_key, "delete key [val]", NULL},
-        {"color", cmd_print_color, "printf color text", NULL},
+    {"history", cmd_history, "show history list", NULL},
+    {"example", cmd_example, "example [-f|-i|-s] [val]", NULL},
+    {"delcmd", cmd_delete_cmd, "delete cmd [val]", NULL},
+    {"delkey", cmd_delete_key, "delete key [val]", NULL},
+    {"color", cmd_print_color, "printf color text", NULL},
 #endif
 };
 
-static xcmd_key_t keys[] =
-    {
+static xcmd_key_t keys[] = {
 #ifndef ENABLE_XCMD_EXPORT
-        {KEY_CTR_Q, cmd_ctr_q, "ctr+q", NULL},
+    {KEY_CTR_Q, cmd_ctr_q, "ctr+q", NULL},
 #endif
 };
 

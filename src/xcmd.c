@@ -13,7 +13,7 @@
 #define CMD_IS_PRINT(c) ((c >= 32) && (c <= 126))
 
 typedef struct __history {
-    char line[XCMD_LINE_MAX_LENGTH];
+    char line[XCMD_LINE_MAX_LENGTH + 1];
     struct __history *next;
     struct __history *prev;
 } xcmd_history_t;
@@ -49,6 +49,7 @@ struct
         {
             uint16_t len;
             xcmd_history_t *head;
+            xcmd_history_t *tail;
             xcmd_history_t *slider;
         } history_list;
 #endif
@@ -271,8 +272,8 @@ char *xcmd_end_of_input(void) {
         if (g_xcmder.parser.history_list.head == NULL) {
             xcmd_history_insert(ret);
         } else {
-            char *head_line = g_xcmder.parser.history_list.head->line;
-            if (strcmp(head_line, ret) != 0) {
+            char *tail_line = g_xcmder.parser.history_list.tail->line;
+            if (strcmp(tail_line, ret) != 0) {
                 xcmd_history_insert(ret);
             }
         }
@@ -379,7 +380,6 @@ void xcmd_display_delete_char(void) {
         }
         g_xcmder.parser.byte_num--;
         g_xcmder.parser.cursor--;
-        line[g_xcmder.parser.byte_num] = ' ';
         line[g_xcmder.parser.byte_num] = '\0';
         xcmd_print(CUB(1));
         xcmd_print(DCH(1));
@@ -414,24 +414,27 @@ void xcmd_history_insert(char *str) {
         if (g_xcmder.parser.history_list.len == 0) /* 头插 */
         {
             strncpy(new_p->line, str, XCMD_LINE_MAX_LENGTH);
+            new_p->prev = new_p;
+            new_p->next = new_p;
             g_xcmder.parser.history_list.head = new_p;
-            g_xcmder.parser.history_list.head->next = new_p;
-            g_xcmder.parser.history_list.head->prev = new_p;
-            g_xcmder.parser.history_list.slider = new_p;
+            g_xcmder.parser.history_list.tail = new_p;
+            g_xcmder.parser.history_list.slider = NULL;
             g_xcmder.parser.history_list.len++;
         } else {
             strncpy(new_p->line, str, XCMD_LINE_MAX_LENGTH);
-            xcmd_history_t *old_head = g_xcmder.parser.history_list.head;
-            g_xcmder.parser.history_list.head = new_p;
-            new_p->next = old_head;
-            new_p->prev = old_head->prev;
-            old_head->prev->next = new_p;
-            old_head->prev = new_p;
+            new_p->prev = g_xcmder.parser.history_list.tail;
+            new_p->next = g_xcmder.parser.history_list.head;
+            g_xcmder.parser.history_list.head->prev = new_p;
+            g_xcmder.parser.history_list.tail->next = new_p;
+            g_xcmder.parser.history_list.tail = new_p;
+            g_xcmder.parser.history_list.slider = NULL;
             g_xcmder.parser.history_list.len++;
         }
     } else {
-        g_xcmder.parser.history_list.head = g_xcmder.parser.history_list.head->prev;
         strncpy(g_xcmder.parser.history_list.head->line, str, XCMD_LINE_MAX_LENGTH);
+        g_xcmder.parser.history_list.tail = g_xcmder.parser.history_list.head;
+        g_xcmder.parser.history_list.head = g_xcmder.parser.history_list.head->next;
+        g_xcmder.parser.history_list.slider = NULL;
     }
 #endif
 }
@@ -440,10 +443,13 @@ char *xcmd_history_next(void) {
     char *line = NULL;
 #if XCMD_HISTORY_MAX_NUM
     if (g_xcmder.parser.history_list.len) {
-        line = g_xcmder.parser.history_list.slider->line;
-        ;
-        if (g_xcmder.parser.history_list.slider->next != g_xcmder.parser.history_list.head) {
+        if (g_xcmder.parser.history_list.slider) {
+            if (g_xcmder.parser.history_list.slider != g_xcmder.parser.history_list.tail) {
             g_xcmder.parser.history_list.slider = g_xcmder.parser.history_list.slider->next;
+                line = g_xcmder.parser.history_list.slider->line;
+            } else {
+                g_xcmder.parser.history_list.slider = NULL;
+            }
         }
     }
 #endif
@@ -454,10 +460,12 @@ char *xcmd_history_prev(void) {
     char *line = NULL;
 #if XCMD_HISTORY_MAX_NUM
     if (g_xcmder.parser.history_list.len) {
-        if (g_xcmder.parser.history_list.slider != g_xcmder.parser.history_list.head) {
+        if (!g_xcmder.parser.history_list.slider) {
+            g_xcmder.parser.history_list.slider = g_xcmder.parser.history_list.tail;
+        } else if (g_xcmder.parser.history_list.slider != g_xcmder.parser.history_list.head) {
             g_xcmder.parser.history_list.slider = g_xcmder.parser.history_list.slider->prev;
-            line = g_xcmder.parser.history_list.slider->line;
         }
+        line = g_xcmder.parser.history_list.slider->line;
     }
 #endif
     return line;
@@ -483,16 +491,27 @@ uint16_t xcmd_history_len(void) {
 #endif
 }
 
+char *xcmd_history_slider_head(void) {
+    char *line = NULL;
+#if XCMD_HISTORY_MAX_NUM
+    if (g_xcmder.parser.history_list.len) {
+        g_xcmder.parser.history_list.slider = g_xcmder.parser.history_list.head;
+        line = g_xcmder.parser.history_list.slider->line;
+    }
+#endif
+    return line;
+}
+
 void xcmd_history_slider_reset(void) {
 #if XCMD_HISTORY_MAX_NUM
-    g_xcmder.parser.history_list.slider = g_xcmder.parser.history_list.head;
+    g_xcmder.parser.history_list.slider = NULL;
 #endif
 }
 
 int xcmd_exec(char *str) {
     int param_num = 0;
     char *cmd_param_buff[XCMD_PARAM_MAX_NUM];
-    char temp[XCMD_LINE_MAX_LENGTH];
+    char temp[XCMD_LINE_MAX_LENGTH + 1];
     strncpy(temp, str, XCMD_LINE_MAX_LENGTH);
     param_num = xcmd_get_param(temp, " ", cmd_param_buff, XCMD_PARAM_MAX_NUM);
     if (param_num > 0) {
