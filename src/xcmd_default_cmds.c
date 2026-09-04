@@ -1,11 +1,3 @@
-/*
- * @Author: your name
- * @Date: 2021-09-15 00:11:50
- * @LastEditTime: 2021-10-11 21:37:09
- * @LastEditors: Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: /xcmd/src/xcmd_default_cmds.c
- */
 #include "xcmd_default_cmds.h"
 
 #include <stdlib.h>
@@ -29,7 +21,7 @@ static int cmd_help(int argc, char* argv[]) {
 static int cmd_keys(int argc, char* argv[]) {
     xcmd_key_t* p = NULL;
     XCMD_KEY_FOR_EACH(p) {
-        xcmd_print("0x%08X\t", (uint32_t)(size_t)p->key);
+        xcmd_print("0x%08X\t", (uint32_t)p->key);
         xcmd_print("%s\r\n", p->help);
     }
     return 0;
@@ -37,7 +29,7 @@ static int cmd_keys(int argc, char* argv[]) {
 
 static int cmd_logo(int argc, char* argv[]) {
     char* log =
-        "\
+        "\r\n\
  _  _  ___  __  __  ____  \r\n\
 ( \\/ )/ __)(  \\/  )(  _ \\ \r\n\
  )  (( (__  )    (  )(_) )\r\n\

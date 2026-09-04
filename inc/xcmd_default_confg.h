@@ -15,7 +15,7 @@ extern "C" {
 
 #include "xcmd_confg.h"
 
-#define VERSION "1.1.0"
+#define VERSION "1.1.1"
 
 #ifndef XCMD_LINE_MAX_LENGTH
 #define XCMD_LINE_MAX_LENGTH (64) /* 命令行支持的最大字符数 */
@@ -48,6 +48,10 @@ extern "C" {
 
 #ifndef ENABLE_XCMD_EXPORT
 // #define ENABLE_XCMD_EXPORT /*使能XCMD_EXPORT_CMD和XCMD_EXPORT_KEY*/
+#endif
+
+#ifndef XCMD_END_LINE_MODE
+// #define XCMD_END_LINE_MODE /*启用尾行模式, xcmd_print_end_line 输出的内容会被插入到命令行上方*/
 #endif
 
 #ifdef __cplusplus

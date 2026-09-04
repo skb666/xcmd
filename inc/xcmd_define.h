@@ -96,6 +96,9 @@ extern "C" {
 #define IL(n) "\x1B[%dL", n   /* 插入行	将 <n> 行插入光标位置的缓冲区。 光标所在的行及其下方的行将向下移动。*/
 #define DL(n) "\x1B[%dM\r", n /* 删除行	从缓冲区中删除 <n> 行，从光标所在的行开始。*/
 
+/* 行擦除 */
+#define EL_CURRENT_LINE "\x1B[2K" /* 擦除整行	从行首到行尾擦除当前行 (含光标位置), 光标不移动 */
+
 /* 打印字体颜色设置 */
 #define TX_DEF "\x1b[0m"
 #define TX_BLACK "\x1b[30m"
