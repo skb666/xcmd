@@ -6,7 +6,10 @@
 #include "xcmd_default_confg.h"
 
 static int cmd_clear(int argc, char* argv[]) {
-    xcmd_print("\033c");
+    xcmd_print("\033[2J");     /* 清屏 */
+    xcmd_print("\033[H");      /* 光标回到屏幕左上角 */
+    xcmd_display_clear();      /* 清空输入行缓存并重绘提示符 */
+    xcmd_display_redraw_set(); /* 已自行重绘命令行, 框架收尾不再补 \r\n+提示符 */
     return 0;
 }
 

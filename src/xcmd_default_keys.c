@@ -27,11 +27,11 @@ static int xcmd_enter(void* pv) {
         xcmd_exec(cmd);
         cmd[0] = '\0';
     }
-#ifndef XCMD_DEFAULT_PROMPT_CLOLR
-    xcmd_print("%s", xcmd_get_prompt());
-#else
-    xcmd_print(XCMD_DEFAULT_PROMPT_CLOLR "%s" TX_DEF, xcmd_get_prompt());
-#endif
+    /* 命令 (如 clear) 已自行重绘命令行, 不再补提示符 */
+    if (xcmd_display_redraw_take()) {
+        return 0;
+    }
+    xcmd_display_prompt_print();
     return 0;
 }
 XCMD_EXPORT_KEY(KEY_CTR_M, xcmd_enter, "enter")

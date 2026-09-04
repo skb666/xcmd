@@ -247,6 +247,37 @@ uint8_t xcmd_display_current_char(char* cha);
 void xcmd_display_clear(void);
 
 /**
+ * @description: 打印提示符 (含颜色), 供需要自行重绘命令行的场合使用
+ * @param {*}
+ * @return 无
+ */
+void xcmd_display_prompt_print(void);
+
+/**
+ * @description: 重绘命令行: 擦除当前行并打印提示符。
+ * 供 shell 就绪前使用——用户 main 里若在 xcmd_init 之后还有其它打印,
+ * 应在所有打印结束后调用本函数, 保证提示符是屏幕上最后的内容。
+ * @param {*}
+ * @return 无
+ */
+void xcmd_display_redraw(void);
+
+/**
+ * @description: 标记命令行已由命令自行重绘 (如 clear 清屏后), 框架收尾时跳过补行+提示符。
+ * 注意: 调用方需保证此时提示符已在屏幕上, 跳过收尾意味着提示符完全由命令负责。
+ * @param {*}
+ * @return 无
+ */
+void xcmd_display_redraw_set(void);
+
+/**
+ * @description: 取走重绘标志: 返回1表示命令已自行重绘, 并清零标志
+ * @param {*}
+ * @return {uint8_t} 1=有待处理的重绘标志; 0=无
+ */
+uint8_t xcmd_display_redraw_take(void);
+
+/**
  * @description: 获取显示器的内容
  * @param {*}
  * @return {char*} *显示器的内容的指针

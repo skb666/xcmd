@@ -64,6 +64,7 @@ struct
         uint32_t key_val;
         uint16_t param_len;
         uint8_t (*recv_hook_func)(char*); /* 解释器接收钩子函数，返回0则接收到的数据会返回给解释器，返回1则不会 */
+        uint8_t redraw_pending;           /* 命令已自行重绘命令行 (如 clear), 框架收尾时跳过补行+提示符 */
     } parser;
 #ifdef XCMD_END_LINE_MODE
     uint8_t cmd_executing; /* 当前是否正在执行命令 (对应 letter-shell status.isActive) */
@@ -90,6 +91,17 @@ int file_write(size_t fd, const char* str) {
 int file_read(size_t fd, char* buf, int buflen) {
     return -1;
 }
+
+/* 打印提示符 (含颜色), 供框架各重绘路径及 xcmd_enter 使用 */
+void xcmd_display_prompt_print(void) {
+#ifndef XCMD_DEFAULT_PROMPT_CLOLR
+    xcmd_print("%s", g_xcmder.parser.prompt);
+#else
+    xcmd_print(XCMD_DEFAULT_PROMPT_CLOLR "%s" TX_DEF, g_xcmder.parser.prompt);
+#endif
+}
+
+static uint8_t xcmd_display_redraw_get(void); /* 查询重绘标志, 供 xcmd_cmd_match 收尾判断 */
 
 static char* xcmd_strpbrk(char* s, const char* delim)  // 返回s1中第一个满足条件的字符的指针, 并且保留""号内的源格式
 {
@@ -214,7 +226,9 @@ static int xcmd_cmd_match(int argc, char* argv[]) {
         }
     }
     if (flag) {
-        xcmd_print("\r\n");
+        if (!xcmd_display_redraw_get()) {
+            xcmd_print("\r\n");
+        }
     } else {
         xcmd_print("cmd \"%s\" does not exist\r\n", argv[0]);
     }
@@ -234,6 +248,9 @@ static void xcmd_key_match(char* key) {
 
 static void xcmd_key_exec(char* key) {
     xcmd_key_match(key);
+    /* 按键处理完消耗重绘标志: Ctrl+L 等按键路径重绘过命令行且不在回车流程内,
+     * 必须在此了结标志, 否则泄漏到下一次回车, 会误跳过那条命令的补行+提示符 */
+    (void)xcmd_display_redraw_take();
 }
 
 static uint8_t xcmd_rcv_encode(uint8_t byte) {
@@ -377,11 +394,7 @@ void xcmd_put_str_end_line_len(const char* str, uint16_t len) {
     xcmd_put_buf(str, len);
     /* 3. 空闲时重绘命令行 (正在执行命令时不渲染) */
     if (!g_xcmder.cmd_executing) {
-#ifdef XCMD_DEFAULT_PROMPT_CLOLR
-        xcmd_print(XCMD_DEFAULT_PROMPT_CLOLR "%s" TX_DEF, g_xcmder.parser.prompt);
-#else
-        xcmd_print("%s", g_xcmder.parser.prompt);
-#endif
+        xcmd_display_prompt_print();
         if (g_xcmder.parser.byte_num > 0) {
             xcmd_print("%s", g_xcmder.parser.display_line);
         }
@@ -440,14 +453,30 @@ char* xcmd_display_get(void) {
 void xcmd_display_clear(void) {
     char* line = xcmd_display_get();
     xcmd_print(DL(1));
-#ifndef XCMD_DEFAULT_PROMPT_CLOLR
-    xcmd_put_str(xcmd_get_prompt());
-#else
-    xcmd_print(XCMD_DEFAULT_PROMPT_CLOLR "%s" TX_DEF, xcmd_get_prompt());
-#endif
+    xcmd_display_prompt_print();
     g_xcmder.parser.byte_num = 0;
     g_xcmder.parser.cursor = 0;
     line[0] = '\0';
+}
+
+/* 供外部 (或 shell 就绪处) 重绘命令行: 擦当前行并打印提示符 */
+void xcmd_display_redraw(void) {
+    xcmd_print(EL_CURRENT_LINE "\r");
+    xcmd_display_prompt_print();
+}
+
+void xcmd_display_redraw_set(void) {
+    g_xcmder.parser.redraw_pending = 1;
+}
+
+uint8_t xcmd_display_redraw_take(void) {
+    uint8_t pending = g_xcmder.parser.redraw_pending;
+    g_xcmder.parser.redraw_pending = 0;
+    return pending;
+}
+
+static uint8_t xcmd_display_redraw_get(void) {
+    return g_xcmder.parser.redraw_pending;
 }
 
 void xcmd_display_insert_char(char c) {
@@ -715,6 +744,7 @@ void xcmd_init(int (*get_c)(uint8_t*), int (*put_c)(uint8_t)) {
         g_xcmder.parser.byte_num = 0;
         g_xcmder.parser.cursor = 0;
         g_xcmder.parser.encode_case_stu = 0;
+        g_xcmder.parser.redraw_pending = 0;
 #ifndef ENABLE_XCMD_EXPORT
         g_xcmder.cmd_list.head.next = NULL;
 #endif
