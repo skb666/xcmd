@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include "xcmd_platform.h"
 #include "xcmd.h"
+#include "xcmd_obj.h"
 #include "test.h"
 #include "ex_keys.h"
 #include "ex_cmds.h"
@@ -40,7 +41,6 @@ int getch(void)
     }
 
     ch = getchar();
-    // xcmd_print("%d\n", ch);
     if (tcsetattr(fd, TCSANOW, &tm_old) < 0)
     { //更改设置为最初的样子
         return -1;
@@ -71,9 +71,9 @@ static xcmd_key_t keys[] =
         {KEY_CTR_C, key_ctr_c, "ctr+c", NULL},
 };
 
-void user_keys_init(void)
+void user_keys_init(xcmder_t* xcmder)
 {
-    xcmd_key_register(keys, sizeof(keys) / sizeof(xcmd_key_t));
+    xcmd_key_register(xcmder, keys, sizeof(keys) / sizeof(xcmd_key_t));
 }
 
 void fatfs_test(char* path)
@@ -96,22 +96,87 @@ void fatfs_test(char* path)
     }
 }
 
+/* 实例1: 绑定终端 stdio */
+static xcmder_t xcmder_stdio;
+
+/* 实例2: 演示第二路 shell —— 绑定到内存回环 IO,
+ * 命令互不干扰: 实例2 只注册了默认命令, help 列表与实例1 不同 */
+static xcmder_t xcmder_second;
+
+static char second_port_tx[256];
+static uint16_t second_port_tx_len = 0;
+static const char* second_port_rx; /* 待注入实例2的输入 */
+static uint16_t second_port_rx_len = 0;
+static uint16_t second_port_rx_pos = 0;
+
+static int second_get_char(uint8_t *ch)
+{
+    if (second_port_rx_pos < second_port_rx_len)
+    {
+        *ch = (uint8_t)second_port_rx[second_port_rx_pos++];
+        return 1;
+    }
+    return 0;
+}
+
+static int second_put_char(uint8_t ch)
+{
+    if (second_port_tx_len < sizeof(second_port_tx) - 1)
+    {
+        second_port_tx[second_port_tx_len++] = (char)ch;
+        second_port_tx[second_port_tx_len] = '\0';
+    }
+    return 1;
+}
+
+/* 向实例2 注入一条命令并泵任务直到输入耗尽, 返回实例2的输出 */
+static const char* second_exec(const char* line)
+{
+    second_port_tx_len = 0;
+    second_port_tx[0] = '\0';
+    second_port_rx = line;
+    second_port_rx_len = (uint16_t)strlen(line);
+    second_port_rx_pos = 0;
+    for (int i = 0; i < 512; i++)
+    {
+        xcmd_task(&xcmder_second);
+        if (second_port_rx_pos >= second_port_rx_len)
+        {
+            break;
+        }
+    }
+    return second_port_tx;
+}
+
 int main(void)
 {
-    xcmd_init(cmd_get_char, cmd_put_char);
+    xcmd_init(&xcmder_stdio, cmd_get_char, cmd_put_char);
     ram_disk_init();
     mmc_disk_init();
-    test_cmd_init();
-    test_keys_init();
-    user_keys_init();
-    ex_keys_init();
-    ex_cmds_init();
-    socket_cmds_init();
-    fs_cmds_init();
-    ex_list_init();
-    xcmd_display_redraw(); /* 所有初始化输出结束后重绘命令行, 提示符回到行首 */
+    test_cmd_init(&xcmder_stdio);
+    test_keys_init(&xcmder_stdio);
+    user_keys_init(&xcmder_stdio);
+    ex_keys_init(&xcmder_stdio);
+    ex_cmds_init(&xcmder_stdio);
+    socket_cmds_init(&xcmder_stdio);
+    fs_cmds_init(&xcmder_stdio);
+    ex_list_init(&xcmder_stdio);
+    xcmd_display_redraw(&xcmder_stdio); /* 所有初始化输出结束后重绘命令行, 提示符回到行首 */
+
+    /* 实例2: 独立初始化, 只注册默认命令, 提示符也独立 */
+    xcmd_init(&xcmder_second, second_get_char, second_put_char);
+    xcmd_set_prompt(&xcmder_second, "2nd>");
+
+    /* 多实例隔离验证: 实例2 执行 help, 两个实例互不影响 */
+    printf("\r\n[instance 2] exec 'help':\r\n%s\r\n", second_exec("help\r"));
+    printf("[instance 2] exec 'example -i 42' (not registered on instance 2):\r\n%s\r\n",
+           second_exec("example -i 42\r"));
+    printf("[instance 1] 'example' still works here; instance 2 prompt: %s\r\n\r\n",
+           xcmd_get_prompt(&xcmder_second));
+
     while (1)
     {
-        xcmd_task();
+        xcmd_task(&xcmder_stdio);
+        xcmd_task(&xcmder_second);
     }
 }

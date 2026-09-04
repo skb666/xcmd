@@ -17,11 +17,11 @@ static int x_inet_send_to(int fd, char* ip, uint16_t port, void* data, uint16_t 
     return ret;
 }
 
-static int xcmd_udp_client(int argc, char** argv) {
+static int xcmd_udp_client(xcmder_t* xcmder, int argc, char** argv) {
     if (argc >= 4) {
         int udp = socket(AF_INET, SOCK_DGRAM, 0);
         if (udp < 0) {
-            xcmd_print("Open socket error!!\r\n");
+            xcmd_print(xcmder, "Open socket error!!\r\n");
             return -1;
         }
         char* ip = argv[1];
@@ -29,18 +29,18 @@ static int xcmd_udp_client(int argc, char** argv) {
         char* data = argv[3];
         uint16_t len = strlen(data);
         if (x_inet_send_to(udp, ip, port, data, len) < 0) {
-            xcmd_print("Send msg error\r\n");
+            xcmd_print(xcmder, "Send msg error\r\n");
             close(udp);
             return -1;
         }
         close(udp);
     } else {
-        xcmd_print("Usage: udp_client ip port msg");
+        xcmd_print(xcmder, "Usage: udp_client ip port msg");
     }
     return 0;
 }
 
-static int xcmd_udp_service(int argc, char** argv) {
+static int xcmd_udp_service(xcmder_t* xcmder, int argc, char** argv) {
     struct sockaddr_in addrin;
     addrin.sin_family = AF_INET;
 
@@ -56,10 +56,10 @@ static int xcmd_udp_service(int argc, char** argv) {
     }
     int udp = socket(AF_INET, SOCK_DGRAM, 0);
     if (udp < 0) {
-        xcmd_print("Open socket error!!\r\n");
+        xcmd_print(xcmder, "Open socket error!!\r\n");
     }
     if (bind(udp, (struct sockaddr*)&addrin, sizeof(addrin)) < 0) {
-        xcmd_print("Bind error\r\n");
+        xcmd_print(xcmder, "Bind error\r\n");
         close(udp);
         return -1;
     }
@@ -71,8 +71,8 @@ static int xcmd_udp_service(int argc, char** argv) {
     rcv_len = recvfrom(udp, rcv_buf, 128, 0, (struct sockaddr*)&client_addr, &addr_len);
     if (rcv_len > 0) {
         rcv_buf[rcv_len] = '\0';
-        xcmd_print("rcv from \"ip=%s port=%d\" msg:\r\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-        xcmd_print(rcv_buf);
+        xcmd_print(xcmder, "rcv from \"ip=%s port=%d\" msg:\r\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        xcmd_print(xcmder, rcv_buf);
     }
     close(udp);
     return 0;
@@ -88,6 +88,6 @@ static xcmd_t cmds[] =
 #endif
 };
 
-void socket_cmds_init(void) {
-    xcmd_cmd_register(cmds, sizeof(cmds) / sizeof(xcmd_t));
+void socket_cmds_init(xcmder_t* xcmder) {
+    xcmd_cmd_register(xcmder, cmds, sizeof(cmds) / sizeof(xcmd_t));
 }

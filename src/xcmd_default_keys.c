@@ -14,63 +14,69 @@ static int xcmd_str_match(const char* str1, const char* str2) {
 }
 
 static int xcmd_del_char(void* pv) {
-    xcmd_display_delete_char();
+    xcmder_t* xcmder = (xcmder_t*)pv;
+    xcmd_display_delete_char(xcmder);
     return 0;
 }
 XCMD_EXPORT_KEY(KEY_CTR_H, xcmd_del_char, "backspace")
 XCMD_EXPORT_KEY(KEY_BACKSPACE, xcmd_del_char, "delete")
 
 static int xcmd_enter(void* pv) {
-    char* cmd = xcmd_end_of_input();
-    xcmd_print("\n\r");
+    xcmder_t* xcmder = (xcmder_t*)pv;
+    char* cmd = xcmd_end_of_input(xcmder);
+    xcmd_print(xcmder, "\n\r");
     if (cmd[0]) {
-        xcmd_exec(cmd);
+        xcmd_exec(xcmder, cmd);
         cmd[0] = '\0';
     }
     /* 命令 (如 clear) 已自行重绘命令行, 不再补提示符 */
-    if (xcmd_display_redraw_take()) {
+    if (xcmd_display_redraw_take(xcmder)) {
         return 0;
     }
-    xcmd_display_prompt_print();
+    xcmd_display_prompt_print(xcmder);
     return 0;
 }
 XCMD_EXPORT_KEY(KEY_CTR_M, xcmd_enter, "enter")
 XCMD_EXPORT_KEY(KEY_CTR_J, xcmd_enter, "enter")
 
 static int xcmd_cursor_left(void* pv) {
-    uint16_t pos = xcmd_display_cursor_get();
+    xcmder_t* xcmder = (xcmder_t*)pv;
+    uint16_t pos = xcmd_display_cursor_get(xcmder);
     if (pos > 0) {
         pos--;
-        xcmd_display_cursor_set(pos);
+        xcmd_display_cursor_set(xcmder, pos);
     }
     return 0;
 }
 XCMD_EXPORT_KEY(KEY_LEFT, xcmd_cursor_left, "left")
 
 static int xcmd_cursor_right(void* pv) {
-    uint16_t pos = xcmd_display_cursor_get();
+    xcmder_t* xcmder = (xcmder_t*)pv;
+    uint16_t pos = xcmd_display_cursor_get(xcmder);
     pos++;
-    xcmd_display_cursor_set(pos);
+    xcmd_display_cursor_set(xcmder, pos);
     return 0;
 }
 XCMD_EXPORT_KEY(KEY_RIGHT, xcmd_cursor_right, "right")
 
 #if XCMD_HISTORY_MAX_NUM
 static int xcmd_history_dw(void* pv) {
-    char* line = xcmd_history_next(); /* 向更新的方向回退 */
-    xcmd_display_clear();
+    xcmder_t* xcmder = (xcmder_t*)pv;
+    char* line = xcmd_history_next(xcmder); /* 向更新的方向回退 */
+    xcmd_display_clear(xcmder);
     if (line) {
-        xcmd_display_print(line);
+        xcmd_display_print(xcmder, line);
     }
     return 0;
 }
 XCMD_EXPORT_KEY(KEY_DW, xcmd_history_dw, "down")
 
 static int xcmd_history_up(void* pv) {
-    char* line = xcmd_history_prev(); /* 向更旧的方向翻阅 */
+    xcmder_t* xcmder = (xcmder_t*)pv;
+    char* line = xcmd_history_prev(xcmder); /* 向更旧的方向翻阅 */
     if (line) {
-        xcmd_display_clear();
-        xcmd_display_print(line);
+        xcmd_display_clear(xcmder);
+        xcmd_display_print(xcmder, line);
     }
     return 0;
 }
@@ -78,23 +84,24 @@ XCMD_EXPORT_KEY(KEY_UP, xcmd_history_up, "up")
 #endif
 
 static int xcmd_auto_completion(void* pv) {
+    xcmder_t* xcmder = (xcmder_t*)pv;
     xcmd_t* match_cmd_first = NULL;
     uint16_t match_num = 0;
     uint16_t match_subscript_min = 0;
-    char* display_line = xcmd_display_get();
-    uint16_t cursor_pos = xcmd_display_cursor_get();
+    char* display_line = xcmd_display_get(xcmder);
+    uint16_t cursor_pos = xcmd_display_cursor_get(xcmder);
     xcmd_t* p = NULL;
-    XCMD_CMD_FOR_EACH(p) {
+    XCMD_CMD_FOR_EACH(xcmder, p) {
         if (strncmp(display_line, p->name, cursor_pos) == 0) {
             if (match_num == 0) {
                 match_cmd_first = p;
                 match_subscript_min = strlen(p->name);
             } else if (match_num == 1) {
-                xcmd_print("\r\n%-15s%-15s", match_cmd_first->name, p->name);
+                xcmd_print(xcmder, "\r\n%-15s%-15s", match_cmd_first->name, p->name);
             } else {
-                xcmd_print("%-15s", p->name);
+                xcmd_print(xcmder, "%-15s", p->name);
                 if ((match_num % 4) == 0) {
-                    xcmd_print("\r\n");
+                    xcmd_print(xcmder, "\r\n");
                 }
             }
             uint16_t subscript = xcmd_str_match(match_cmd_first->name, p->name);
@@ -106,12 +113,12 @@ static int xcmd_auto_completion(void* pv) {
     }
 
     if (match_num == 1) {
-        xcmd_display_clear();
-        xcmd_display_print("%s", match_cmd_first->name);
+        xcmd_display_clear(xcmder);
+        xcmd_display_print(xcmder, "%s", match_cmd_first->name);
     } else if (match_num > 1) {
-        xcmd_print("\r\n");
-        xcmd_display_clear();
-        xcmd_display_write(match_cmd_first->name, match_subscript_min);
+        xcmd_print(xcmder, "\r\n");
+        xcmd_display_clear(xcmder);
+        xcmd_display_write(xcmder, match_cmd_first->name, match_subscript_min);
     }
     return 0;
 }
@@ -133,6 +140,6 @@ static xcmd_key_t default_keys[] = {
 #endif
 };
 
-void default_keys_init(void) {
-    xcmd_key_register(default_keys, sizeof(default_keys) / sizeof(xcmd_key_t));
+void default_keys_init(xcmder_t* xcmder) {
+    xcmd_key_register(xcmder, default_keys, sizeof(default_keys) / sizeof(xcmd_key_t));
 }

@@ -10,12 +10,14 @@
 #ifndef TEST_H
 #define TEST_H
 
+#include "xcmd_obj.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void test_cmd_init(void);
-void test_keys_init(void);
+void test_cmd_init(xcmder_t* xcmder);
+void test_keys_init(xcmder_t* xcmder);
 
 #ifdef __cplusplus
 }

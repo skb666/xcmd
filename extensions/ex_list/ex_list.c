@@ -10,7 +10,7 @@ struct student {
     int math;
 };
 
-static int list_test(int argc, char *argv[]) {
+static int list_test(xcmder_t* xcmder, int argc, char *argv[]) {
     struct student *p;
     struct student stu1;
     struct student stu2;
@@ -52,7 +52,7 @@ static int list_test(int argc, char *argv[]) {
     return 0;
 }
 
-static int list_note_del(int argc, char *argv[]) {
+static int list_note_del(xcmder_t* xcmder, int argc, char *argv[]) {
     struct student *p;
     struct student stu1;
     struct student stu2;
@@ -95,7 +95,7 @@ static int list_note_del(int argc, char *argv[]) {
     return 0;
 }
 
-static int list_note_rep(int argc, char *argv[]) {
+static int list_note_rep(xcmder_t* xcmder, int argc, char *argv[]) {
     struct student *p;
     struct student stu1;
     struct student stu2;
@@ -136,7 +136,7 @@ static int list_note_rep(int argc, char *argv[]) {
     return 0;
 }
 
-static int list_note_del_insert(int argc, char *argv[]) {
+static int list_note_del_insert(xcmder_t* xcmder, int argc, char *argv[]) {
     struct student *p;
     struct student stu1;
     struct student stu2;
@@ -176,7 +176,7 @@ static int list_note_del_insert(int argc, char *argv[]) {
     return 0;
 }
 
-static int List_to_merge(int argc, char *argv[]) {
+static int List_to_merge(xcmder_t* xcmder, int argc, char *argv[]) {
     struct student *p;
     struct student *q;
     struct student stu1;
@@ -226,7 +226,7 @@ static int List_to_merge(int argc, char *argv[]) {
     return 0;
 }
 
-static int List_traverse(int argc, char *argv[]) {
+static int List_traverse(xcmder_t* xcmder, int argc, char *argv[]) {
     struct student *p;
     struct student stu1;
     struct student stu2;
@@ -277,6 +277,6 @@ static xcmd_t cmds[] = {
 #endif
 };
 
-void ex_list_init(void) {
-    xcmd_cmd_register(cmds, sizeof(cmds) / sizeof(xcmd_t));
+void ex_list_init(xcmder_t* xcmder) {
+    xcmd_cmd_register(xcmder, cmds, sizeof(cmds) / sizeof(xcmd_t));
 }

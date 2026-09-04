@@ -51,7 +51,7 @@ static FILINFO fno;
 #define HELP_TOUCH ("Create empty FILE. Usage: touch path")
 #define HELP_WRITE ("Write str to FILE. Usage: wr string (>|>>) filename")
 
-static FRESULT scan_files(
+static FRESULT scan_files(xcmder_t* xcmder,
     char *path /* Start node to be scanned (***also used as work area***) */
 ) {
     FRESULT res;
@@ -65,20 +65,20 @@ static FRESULT scan_files(
                 if (res != FR_OK || fno.fname[0] == 0)
                     break;                  /* Break on error or end of dir */
                 if (fno.fattrib & AM_DIR) { /* It is a directory */
-                    xcmd_print(
+                    xcmd_print(xcmder, 
                         "\x1B[34m"
                         "%s"
                         "\x1B[0m"
                         "  ",
                         fno.fname);
                 } else { /* It is a file. */
-                    xcmd_print("%s  ", fno.fname);
+                    xcmd_print(xcmder, "%s  ", fno.fname);
                 }
             }
             f_closedir(&dir);
         }
     } else {
-        xcmd_print("%s  ", fno.fname);
+        xcmd_print(xcmder, "%s  ", fno.fname);
     }
     return res;
 }
@@ -143,7 +143,7 @@ static FRESULT df(char *path, DWORD *totle_byte, DWORD *free_byte) {
     return res;
 }
 
-static int cmd_df(int argc, char *argv[]) {
+static int cmd_df(xcmder_t* xcmder, int argc, char *argv[]) {
     FRESULT res;
     DWORD fre_bytes, tot_bytes;
     char *disk_path;
@@ -152,44 +152,44 @@ static int cmd_df(int argc, char *argv[]) {
         if (disk_path) {
             res = df(disk_path, &tot_bytes, &fre_bytes);
             if (res != FR_OK) {
-                xcmd_print("%s Failure:%s\r\n", disk_path, RESAULT_TO_STR(res));
+                xcmd_print(xcmder, "%s Failure:%s\r\n", disk_path, RESAULT_TO_STR(res));
             } else {
-                xcmd_print("%s %lu/%lu KiB.\r\n", disk_path, fre_bytes / 1024, tot_bytes / 1024);
+                xcmd_print(xcmder, "%s %lu/%lu KiB.\r\n", disk_path, fre_bytes / 1024, tot_bytes / 1024);
             }
         }
     }
     return 0;
 }
 
-static int cmd_ls(int argc, char *argv[]) {
+static int cmd_ls(xcmder_t* xcmder, int argc, char *argv[]) {
     if (argc == 1) {
-        scan_files("./");
+        scan_files(xcmder, "./");
     } else {
-        scan_files(argv[1]);
+        scan_files(xcmder, argv[1]);
     }
     return 0;
 }
 
-static int cmd_cd(int argc, char *argv[]) {
+static int cmd_cd(xcmder_t* xcmder, int argc, char *argv[]) {
     if (argc >= 2) {
         FRESULT res;
         f_chdrive(argv[1]);
         res = f_chdir(argv[1]);
         if (res != FR_OK) {
-            xcmd_print("Failure:%s\r\n", RESAULT_TO_STR(res));
+            xcmd_print(xcmder, "Failure:%s\r\n", RESAULT_TO_STR(res));
         } else {
             res = f_getcwd(g_prompt, 128);
             strcat(g_prompt, "> ");
-            xcmd_set_prompt(g_prompt);
+            xcmd_set_prompt(xcmder, g_prompt);
         }
     } else {
-        xcmd_print("%s\r\n", HELP_CD);
+        xcmd_print(xcmder, "%s\r\n", HELP_CD);
         return -1;
     }
     return 0;
 }
 
-static int cmd_rm(int argc, char *argv[]) {
+static int cmd_rm(xcmder_t* xcmder, int argc, char *argv[]) {
     FRESULT res;
     uint8_t dir_flag = 0;
     uint8_t param_num = 2;
@@ -203,89 +203,89 @@ static int cmd_rm(int argc, char *argv[]) {
         if (dir_flag) {
             res = rm_dir(argv[2]);
             if (res != FR_OK) {
-                xcmd_print("Failure:%s\r\n", RESAULT_TO_STR(res));
+                xcmd_print(xcmder, "Failure:%s\r\n", RESAULT_TO_STR(res));
                 return -1;
             }
         } else {
             res = f_stat(argv[1], &fno);
             if (res != FR_OK) {
-                xcmd_print("Failure:%s\r\n", RESAULT_TO_STR(res));
+                xcmd_print(xcmder, "Failure:%s\r\n", RESAULT_TO_STR(res));
                 return -1;
             }
             if (fno.fattrib & AM_DIR) {
-                xcmd_print("Failure:%s\r\n", "PATH is DIR");
+                xcmd_print(xcmder, "Failure:%s\r\n", "PATH is DIR");
             } else {
                 res = f_unlink(argv[1]);
                 if (res != FR_OK) {
-                    xcmd_print("Failure:%s\r\n", RESAULT_TO_STR(res));
+                    xcmd_print(xcmder, "Failure:%s\r\n", RESAULT_TO_STR(res));
                     return -1;
                 }
             }
         }
     } else {
-        xcmd_print("%s\r\n", HELP_RM);
+        xcmd_print(xcmder, "%s\r\n", HELP_RM);
         return -1;
     }
     return 0;
 }
 
-static int cmd_mv(int argc, char *argv[]) {
+static int cmd_mv(xcmder_t* xcmder, int argc, char *argv[]) {
     if (argc >= 3) {
         FRESULT res;
         res = f_rename(argv[1], argv[2]);
         if (res != FR_OK) {
-            xcmd_print("Failure:%s\r\n", RESAULT_TO_STR(res));
+            xcmd_print(xcmder, "Failure:%s\r\n", RESAULT_TO_STR(res));
             return -1;
         }
     } else {
-        xcmd_print("%s\r\n", HELP_MV);
+        xcmd_print(xcmder, "%s\r\n", HELP_MV);
         return -1;
     }
     return 0;
 }
 
-static int cmd_sync(int argc, char *argv[]) {
+static int cmd_sync(xcmder_t* xcmder, int argc, char *argv[]) {
     // f_sync(&fp);
     return 0;
 }
 
-static int cmd_mkdir(int argc, char *argv[]) {
+static int cmd_mkdir(xcmder_t* xcmder, int argc, char *argv[]) {
     if (argc >= 2) {
         FRESULT res;
         res = f_mkdir(argv[1]);
         if (res != FR_OK) {
-            xcmd_print("Failure:%s\r\n", RESAULT_TO_STR(res));
+            xcmd_print(xcmder, "Failure:%s\r\n", RESAULT_TO_STR(res));
             return 0;
         }
     } else {
-        xcmd_print("%s\r\n", HELP_MKDIR);
+        xcmd_print(xcmder, "%s\r\n", HELP_MKDIR);
         return -1;
     }
     return 0;
 }
 
-static int cmd_touch(int argc, char *argv[]) {
+static int cmd_touch(xcmder_t* xcmder, int argc, char *argv[]) {
     if (argc >= 2) {
         FRESULT res;
         res = f_open(&g_file[0], argv[1], FA_CREATE_NEW);
         if ((res != FR_OK) && (res != FR_EXIST)) {
-            xcmd_print("Failure:%s\r\n", RESAULT_TO_STR(res));
+            xcmd_print(xcmder, "Failure:%s\r\n", RESAULT_TO_STR(res));
             return -1;
         }
         f_close(&g_file[0]);
     } else {
-        xcmd_print("%s\r\n", HELP_TOUCH);
+        xcmd_print(xcmder, "%s\r\n", HELP_TOUCH);
         return -1;
     }
     return 0;
 }
 
-static int cmd_cat(int argc, char *argv[]) {
+static int cmd_cat(xcmder_t* xcmder, int argc, char *argv[]) {
     if (argc >= 2) {
         FRESULT res;
         res = f_open(&g_file[0], argv[1], FA_READ);
         if (res != FR_OK) {
-            xcmd_print("Failure:%s\r\n", RESAULT_TO_STR(res));
+            xcmd_print(xcmder, "Failure:%s\r\n", RESAULT_TO_STR(res));
             return -1;
         } else {
             char buf[128];
@@ -293,7 +293,7 @@ static int cmd_cat(int argc, char *argv[]) {
             while (1) {
                 res = f_read(&g_file[0], buf, 128, &br);
                 if (res != FR_OK) {
-                    xcmd_print("Failure:%s\r\n", RESAULT_TO_STR(res));
+                    xcmd_print(xcmder, "Failure:%s\r\n", RESAULT_TO_STR(res));
                     f_close(&g_file[0]);
                     return -1;
                 }
@@ -301,12 +301,12 @@ static int cmd_cat(int argc, char *argv[]) {
                     break;
                 }
                 for (UINT i = 0; i < br; i++) {
-                    xcmd_print("%c", buf[i]);
+                    xcmd_print(xcmder, "%c", buf[i]);
                 }
             }
         }
     } else {
-        xcmd_print("%s\r\n", HELP_CAT);
+        xcmd_print(xcmder, "%s\r\n", HELP_CAT);
         return -1;
     }
     f_close(&g_file[0]);
@@ -388,7 +388,7 @@ static xcmd_t cmds[] =
 #endif
 };
 
-void fs_cmds_init(void) {
-    xcmd_cmd_register(cmds, sizeof(cmds) / sizeof(xcmd_t));
-    xcmd_exec("cd 1:");
+void fs_cmds_init(xcmder_t* xcmder) {
+    xcmd_cmd_register(xcmder, cmds, sizeof(cmds) / sizeof(xcmd_t));
+    xcmd_exec(xcmder, "cd 1:");
 }

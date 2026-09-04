@@ -12,11 +12,11 @@
 
 #define HELP_RUN ("Run cmd. Usage: run cmd")
 
-static int cmd_run(int argc, char* argv[]) {
+static int cmd_run(xcmder_t* xcmder, int argc, char* argv[]) {
     if (argc >= 2) {
-        xcmd_exec(argv[1]);
+        xcmd_exec(xcmder, argv[1]);
     } else {
-        xcmd_print("%s\r\n", HELP_RUN);
+        xcmd_print(xcmder, "%s\r\n", HELP_RUN);
     }
     return 0;
 }
@@ -29,6 +29,6 @@ static xcmd_t cmds[] = {
 #endif
 };
 
-void ex_cmds_init(void) {
-    xcmd_cmd_register(cmds, sizeof(cmds) / sizeof(xcmd_t));
+void ex_cmds_init(xcmder_t* xcmder) {
+    xcmd_cmd_register(xcmder, cmds, sizeof(cmds) / sizeof(xcmd_t));
 }

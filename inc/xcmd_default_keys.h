@@ -9,11 +9,13 @@
 #ifndef XCMD_DEFAULT_KEYS_H
 #define XCMD_DEFAULT_KEYS_H
 
+#include "xcmd_obj.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void default_keys_init(void);
+void default_keys_init(xcmder_t* xcmder);
 
 #ifdef __cplusplus
 }

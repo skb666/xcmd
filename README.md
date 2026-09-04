@@ -13,8 +13,9 @@ xcmd是一款单片机命令行工具，移植十分方便，并且对flash与ra
 3. **支持历史记录**
 4. **支持命令自动补全**
 5. **支持注册快捷键**
-6. **支持 `xcmd_cmd_register()/xcmd_key_register`方法注册命令或按键**
-7. **支持 `XCMD_EXPORT_CMD()/XCMD_EXPORT_KEY()`方法直接导出命令或按键，不需要额外运行注册函数**
+6. **支持多实例：一个工程可创建多个shell，每个实例绑定一路IO（如UART0/UART1），命令表/历史记录/显示缓存互相隔离**
+7. **支持 `xcmd_cmd_register()/xcmd_key_register`方法注册命令或按键**
+8. **支持 `XCMD_EXPORT_CMD()/XCMD_EXPORT_KEY()`方法直接导出命令或按键，不需要额外运行注册函数**
 
 #### 支持的平台
 
@@ -69,16 +70,46 @@ int cmd_put_char(uint8_t ch)
     return 1;
 }
 
+static xcmder_t xcmder; /* 声明一个xcmd实例 */
+
 void setup() {
     Serial.begin(115200);
-    xcmd_init(cmd_get_char, cmd_put_char);
+    xcmd_init(&xcmder, cmd_get_char, cmd_put_char);
 }
 
 void loop() {
   
-    xcmd_task();
+    xcmd_task(&xcmder);
 }
 ```
+
+#### 多实例
+
+xcmd 所有运行状态都收在 `xcmder_t` 实例内（见 `inc/xcmd_obj.h`），不占用全局变量。
+需要多路 shell 时为每路 IO 各建一个实例即可，实例间的命令表、按键表、历史记录、
+显示缓存完全隔离：
+
+```C
+static xcmder_t xcmder_uart0;
+static xcmder_t xcmder_uart1;
+
+xcmd_init(&xcmder_uart0, uart0_get_char, uart0_put_char);
+xcmd_init(&xcmder_uart1, uart1_get_char, uart1_put_char);
+
+test_cmd_init(&xcmder_uart0);   /* 扩展命令只注册到实例0 */
+xcmd_set_prompt(&xcmder_uart1, "uart1>");  /* 实例1 用独立的提示符 */
+
+while(1) {
+    xcmd_task(&xcmder_uart0);
+    xcmd_task(&xcmder_uart1);
+}
+```
+
+多实例回归测试见 `test/test_multi_instance.c`（host 平台直接编译运行）。
+
+**注意**：命令回调签名为 `int func(xcmder_t* xcmder, int argc, char* argv[])`，
+按键回调通过 `void* pv` 参数接收实例指针（`pv` 即发起按键的实例）。
+使能 `ENABLE_XCMD_EXPORT` 时导出段是链接期生成的全局单份表，所有实例共享同一张命令表。
 
 #### 配置
 

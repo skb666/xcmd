@@ -8,8 +8,10 @@
  */
 #include <Arduino.h>
 #include "xcmd.h"
+#include "xcmd_obj.h"
 
 int cmd_get_char(uint8_t *ch)
+static xcmder_t xcmder; /* xcmd 实例: 多路 shell 时为每路 IO 各建一个实例 */
 {
     if(Serial.available())
     {
@@ -30,10 +32,10 @@ int cmd_put_char(uint8_t ch)
 
 void setup() {
     Serial.begin(115200);
-    xcmd_init(cmd_get_char, cmd_put_char);
+    xcmd_init(&xcmder, cmd_get_char, cmd_put_char);
 }
 
 void loop() {
     
-    xcmd_task();
+    xcmd_task(&xcmder);
 }
