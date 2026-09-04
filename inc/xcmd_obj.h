@@ -29,7 +29,6 @@ struct xcmder {
     struct
     {
         size_t write_fd;
-        size_t read_fd;
         int (*get_c)(uint8_t*);
         int (*put_c)(uint8_t);
     } io;
@@ -69,7 +68,6 @@ struct xcmder {
         char encode_buf[7];
         uint8_t encode_count;
         uint32_t key_val;
-        uint16_t param_len;
         uint8_t (*recv_hook_func)(char*); /* 解释器接收钩子函数，返回0则接收到的数据会返回给解释器，返回1则不会 */
         uint8_t redraw_pending;           /* 命令已自行重绘命令行 (如 clear), 框架收尾时跳过补行+提示符 */
     } parser;

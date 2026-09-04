@@ -74,16 +74,14 @@ static int xcmd_ctr_right(void *pv) {
     xcmder_t *xcmder = (xcmder_t *)pv;
     char *line = xcmd_display_get(xcmder);
     uint16_t pos = xcmd_display_cursor_get(xcmder);
-    while (line[pos++]) {
-        if (IS_ALPHA(line[pos]) || IS_NUMBER(line[pos])) {
-            break;
-        }
-    }
 
-    while (line[pos++]) {
-        if (!IS_ALPHA(line[pos]) && !IS_NUMBER(line[pos])) {
-            break;
-        }
+    /* 跳过当前位置起的分隔符, 停在下一个词首 */
+    while (line[pos] && !IS_ALPHA(line[pos]) && !IS_NUMBER(line[pos])) {
+        pos++;
+    }
+    /* 跳过整个词, 停在词尾 (即下一个分隔符或行尾) */
+    while (line[pos] && (IS_ALPHA(line[pos]) || IS_NUMBER(line[pos]))) {
+        pos++;
     }
     xcmd_display_cursor_set(xcmder, pos);
     return 0;

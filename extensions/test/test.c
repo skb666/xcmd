@@ -15,20 +15,6 @@
 
 #define EXIT_MESSAGE(xcmder) xcmd_print(xcmder, "press \"q\" or \"Q\" to exit!\r\n")
 
-#define EXIT_CHECK()                   \
-    do                                 \
-        (toupper(GET_CHAR()) == 'Q') { \
-            uint8_t c;                 \
-            if (GET_CHAR(&c)) {        \
-                switch (c)             \
-                case 'q':              \
-                case 'Q':              \
-                case 0x1B:             \
-                    return;            \
-            }                          \
-        }                              \
-    while (0);
-
 static uint8_t param_check(xcmder_t* xcmder, int need, int argc, char* argv[]) {
     uint8_t i, ret = 0;
     if (need < (argc)) {
@@ -71,6 +57,8 @@ static int cmd_example(xcmder_t* xcmder, int argc, char* argv[]) {
 
 static int cmd_history(xcmder_t* xcmder, int argc, char* argv[]) {
     char *line = xcmd_history_slider_head(xcmder);
+    (void)argc;
+    (void)argv;
 
     while (line) {
             xcmd_print(xcmder, "%s\r\n", line);
@@ -114,6 +102,8 @@ static int cmd_ctr_q(void* pv) {
 }
 
 static int cmd_print_color(xcmder_t* xcmder, int argc, char* argv[]) {
+    (void)argc;
+    (void)argv;
     xcmd_print(xcmder, TX_DEF "txt_color = DEF    \r\n" TX_DEF);
     xcmd_print(xcmder, TX_RED "txt_color = RED    \r\n" TX_DEF);
     xcmd_print(xcmder, TX_BLACK "txt_color = BLACK  \r\n" TX_DEF);

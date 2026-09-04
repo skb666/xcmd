@@ -6,6 +6,7 @@
 
 #include "xcmd_default_cmds.h"
 #include "xcmd_default_keys.h"
+#include "xcmd_file.h"
 #include "xcmd_obj.h"
 
 #define CMD_IS_END_KEY(c) (((c >= 'A') && (c <= 'D')) || ((c >= 'P') && (c <= 'S')) || \
@@ -13,23 +14,28 @@
 
 #define CMD_IS_PRINT(c) ((c >= 32) && (c <= 126))
 
-size_t file_open(char* name, int is_write, int is_append) __attribute__((weak));
-void file_close(size_t fd) __attribute__((weak));
-int file_write(size_t fd, const char* str) __attribute__((weak));
-int file_read(size_t fd, char* buf, int buflen) __attribute__((weak));
-
-void file_close(size_t fd) {
-}
-
-size_t file_open(char* name, int is_write, int is_append) {
+/* 恒失败的缺省实现; 需要重定向的平台 (如 fs_cmds) 覆盖强符号 (原型见 xcmd_file.h) */
+__attribute__((weak)) size_t file_open(char* name, int is_write, int is_append) {
+    (void)name;
+    (void)is_write;
+    (void)is_append;
     return (size_t)(-1);
 }
 
-int file_write(size_t fd, const char* str) {
+__attribute__((weak)) void file_close(size_t fd) {
+    (void)fd;
+}
+
+__attribute__((weak)) int file_write(size_t fd, const char* str) {
+    (void)fd;
+    (void)str;
     return -1;
 }
 
-int file_read(size_t fd, char* buf, int buflen) {
+__attribute__((weak)) int file_read(size_t fd, char* buf, int buflen) {
+    (void)fd;
+    (void)buf;
+    (void)buflen;
     return -1;
 }
 
@@ -476,6 +482,7 @@ void xcmd_history_insert(xcmder_t* xcmder, char* str) {
         if (xcmder->parser.history_list.len == 0) /* 首个节点自环 */
         {
             strncpy(new_p->line, str, XCMD_LINE_MAX_LENGTH);
+            new_p->line[XCMD_LINE_MAX_LENGTH] = '\0';
             new_p->prev = new_p;
             new_p->next = new_p;
             xcmder->parser.history_list.head = new_p;
@@ -484,6 +491,7 @@ void xcmd_history_insert(xcmder_t* xcmder, char* str) {
             xcmder->parser.history_list.len++;
         } else {
             strncpy(new_p->line, str, XCMD_LINE_MAX_LENGTH);
+            new_p->line[XCMD_LINE_MAX_LENGTH] = '\0';
             new_p->prev = xcmder->parser.history_list.tail;
             new_p->next = xcmder->parser.history_list.head;
             xcmder->parser.history_list.head->prev = new_p;
@@ -495,6 +503,7 @@ void xcmd_history_insert(xcmder_t* xcmder, char* str) {
     } else {
         /* 池满: 覆写最旧节点(head)并将其旋转为最新(tail), head 后移 */
         strncpy(xcmder->parser.history_list.head->line, str, XCMD_LINE_MAX_LENGTH);
+        xcmder->parser.history_list.head->line[XCMD_LINE_MAX_LENGTH] = '\0';
         xcmder->parser.history_list.tail = xcmder->parser.history_list.head;
         xcmder->parser.history_list.head = xcmder->parser.history_list.head->next;
         xcmder->parser.history_list.slider = NULL;
@@ -579,6 +588,7 @@ int xcmd_exec(xcmder_t* xcmder, char* str) {
     char* cmd_param_buff[XCMD_PARAM_MAX_NUM];
     char temp[XCMD_LINE_MAX_LENGTH + 1];
     strncpy(temp, str, XCMD_LINE_MAX_LENGTH);
+    temp[XCMD_LINE_MAX_LENGTH] = '\0'; /* str 达到上限长度时 strncpy 不保证终止 */
     param_num = xcmd_get_param(temp, " ", cmd_param_buff, XCMD_PARAM_MAX_NUM);
     if (param_num > 0) {
         return xcmd_cmd_match(xcmder, param_num, cmd_param_buff);
@@ -687,7 +697,6 @@ void xcmd_init(xcmder_t* xcmder, int (*get_c)(uint8_t*), int (*put_c)(uint8_t)) 
     if (xcmder && get_c && put_c) {
         xcmder->io.get_c = get_c;
         xcmder->io.put_c = put_c;
-        xcmder->io.read_fd = (size_t)(-1);
         xcmder->io.write_fd = (size_t)(-1);
 
         xcmder->parser.prompt = XCMD_DEFAULT_PROMPT;

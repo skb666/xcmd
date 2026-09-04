@@ -11,6 +11,7 @@
 #include "fatfs_port.h"
 #include "ff.h"
 #include "xcmd.h"
+#include "xcmd_file.h"
 
 #define RESAULT_TO_STR(r) resault_to_str_map[r]
 static char *resault_to_str_map[] =
@@ -147,6 +148,8 @@ static int cmd_df(xcmder_t* xcmder, int argc, char *argv[]) {
     FRESULT res;
     DWORD fre_bytes, tot_bytes;
     char *disk_path;
+    (void)argc;
+    (void)argv;
     for (int i = 0; i < FF_VOLUMES; i++) {
         disk_path = f_disk_path(i);
         if (disk_path) {
@@ -245,6 +248,9 @@ static int cmd_mv(xcmder_t* xcmder, int argc, char *argv[]) {
 }
 
 static int cmd_sync(xcmder_t* xcmder, int argc, char *argv[]) {
+    (void)xcmder;
+    (void)argc;
+    (void)argv;
     // f_sync(&fp);
     return 0;
 }
@@ -313,7 +319,7 @@ static int cmd_cat(xcmder_t* xcmder, int argc, char *argv[]) {
     return 0;
 }
 
-int file_open(char *name, int is_write, int is_append) {
+size_t file_open(char *name, int is_write, int is_append) {
     FRESULT res;
     BYTE mode = 0;
     if (is_write) {
@@ -327,20 +333,20 @@ int file_open(char *name, int is_write, int is_append) {
     }
     res = f_open(&g_file[0], name, mode);
     if (res != FR_OK) {
-        return -1;
+        return (size_t)(-1);
     }
     return 0;
 }
 
-void file_close(int fd) {
-    if (fd != -1)
+void file_close(size_t fd) {
+    if (fd != (size_t)(-1))
         f_close(&g_file[fd]);
 }
 
-int file_read(int fd, char *buf, int buflen) {
+int file_read(size_t fd, char *buf, int buflen) {
     FRESULT res;
     UINT br;
-    if (fd != -1) {
+    if (fd != (size_t)(-1)) {
         res = f_read(&g_file[fd], buf, buflen, &br);
         if (res != FR_OK) {
             return -1;
@@ -350,9 +356,9 @@ int file_read(int fd, char *buf, int buflen) {
     return -1;
 }
 
-int file_write(int fd, const char *str) {
+int file_write(size_t fd, const char *str) {
     FRESULT res = FR_INVALID_PARAMETER;
-    if (fd != -1) {
+    if (fd != (size_t)(-1)) {
         UINT br;
         res = f_write(&g_file[fd], str, strlen(str), &br);
         if (res != FR_OK) {
