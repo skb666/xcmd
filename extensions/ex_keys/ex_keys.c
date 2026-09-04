@@ -88,7 +88,7 @@ XCMD_EXPORT_KEY(KEY_CTR_U, xcmd_ctr_u, "ctr+u")
 XCMD_EXPORT_KEY(KEY_CTR_K, xcmd_ctr_k, "ctr+k")
 XCMD_EXPORT_KEY(KEY_CTR_L, xcmd_ctr_l, "ctr+l")
 XCMD_EXPORT_KEY(KEY_CTR_LEFT, xcmd_ctr_left, "ctr+lelf")
-XCMD_EXPORT_KEY(KEY_CTR_RIGHT, xcmd_ctr_right, "ctr+lelf")
+XCMD_EXPORT_KEY(KEY_CTR_RIGHT, xcmd_ctr_right, "ctr+right")
 
 static xcmd_key_t ex_keys[] = {
 #ifndef ENABLE_XCMD_EXPORT
