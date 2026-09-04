@@ -48,14 +48,14 @@ struct
         struct
         {
             uint16_t len;
-            xcmd_history_t *head;
-            xcmd_history_t *tail;
-            xcmd_history_t *slider;
+            xcmd_history_t* head;   /* 最旧一条 */
+            xcmd_history_t* tail;   /* 最新一条 */
+            xcmd_history_t* slider; /* 历史浏览位置, NULL 表示未在浏览 */
         } history_list;
 #endif
 
         char display_line[XCMD_LINE_MAX_LENGTH + 1]; /* 显示区的缓存 */
-        const char *prompt;                          /* 显示区的提示 */
+        const char* prompt;                          /* 显示区的提示 */
         uint16_t byte_num;                           /* 当前行的字符个数 */
         uint16_t cursor;                             /* 光标所在位置 */
         uint8_t encode_case_stu;
@@ -499,11 +499,11 @@ uint16_t xcmd_display_cursor_get(void) {
     return g_xcmder.parser.cursor;
 }
 
-void xcmd_history_insert(char *str) {
+void xcmd_history_insert(char* str) {
 #if XCMD_HISTORY_MAX_NUM
     if (g_xcmder.parser.history_list.len < XCMD_HISTORY_MAX_NUM) {
-        xcmd_history_t *new_p = &(g_xcmder.parser.history_pool.pool[g_xcmder.parser.history_pool.index++]);
-        if (g_xcmder.parser.history_list.len == 0) /* 头插 */
+        xcmd_history_t* new_p = &(g_xcmder.parser.history_pool.pool[g_xcmder.parser.history_pool.index++]);
+        if (g_xcmder.parser.history_list.len == 0) /* 首个节点自环 */
         {
             strncpy(new_p->line, str, XCMD_LINE_MAX_LENGTH);
             new_p->prev = new_p;
@@ -523,6 +523,7 @@ void xcmd_history_insert(char *str) {
             g_xcmder.parser.history_list.len++;
         }
     } else {
+        /* 池满: 覆写最旧节点(head)并将其旋转为最新(tail), head 后移 */
         strncpy(g_xcmder.parser.history_list.head->line, str, XCMD_LINE_MAX_LENGTH);
         g_xcmder.parser.history_list.tail = g_xcmder.parser.history_list.head;
         g_xcmder.parser.history_list.head = g_xcmder.parser.history_list.head->next;
@@ -531,13 +532,14 @@ void xcmd_history_insert(char *str) {
 #endif
 }
 
-char *xcmd_history_next(void) {
-    char *line = NULL;
+char* xcmd_history_next(void) {
+    char* line = NULL;
 #if XCMD_HISTORY_MAX_NUM
     if (g_xcmder.parser.history_list.len) {
+        /* 向更新的方向移动, 移动后返回; 到达最新(tail)则结束浏览 */
         if (g_xcmder.parser.history_list.slider) {
             if (g_xcmder.parser.history_list.slider != g_xcmder.parser.history_list.tail) {
-            g_xcmder.parser.history_list.slider = g_xcmder.parser.history_list.slider->next;
+                g_xcmder.parser.history_list.slider = g_xcmder.parser.history_list.slider->next;
                 line = g_xcmder.parser.history_list.slider->line;
             } else {
                 g_xcmder.parser.history_list.slider = NULL;
@@ -548,10 +550,11 @@ char *xcmd_history_next(void) {
     return line;
 }
 
-char *xcmd_history_prev(void) {
-    char *line = NULL;
+char* xcmd_history_prev(void) {
+    char* line = NULL;
 #if XCMD_HISTORY_MAX_NUM
     if (g_xcmder.parser.history_list.len) {
+        /* 向更旧的方向移动, 移动后返回; 未浏览时从最新(tail)开始, 到最旧(head)后停住 */
         if (!g_xcmder.parser.history_list.slider) {
             g_xcmder.parser.history_list.slider = g_xcmder.parser.history_list.tail;
         } else if (g_xcmder.parser.history_list.slider != g_xcmder.parser.history_list.head) {

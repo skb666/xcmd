@@ -1,17 +1,9 @@
-/*
- * @Author: your name
- * @Date: 2021-09-15 00:11:50
- * @LastEditTime: 2021-10-27 09:16:27
- * @LastEditors: Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: /xcmd/src/xcmd_default_keys.c
- */
 #include "xcmd_default_keys.h"
 
 #include "xcmd.h"
 #include "xcmd_default_confg.h"
 
-static int xcmd_str_match(const char *str1, const char *str2) {
+static int xcmd_str_match(const char* str1, const char* str2) {
     int i = 0;
     for (i = 0; str1[i] && str2[i]; i++) {
         if (str1[i] != str2[i]) {
@@ -21,15 +13,15 @@ static int xcmd_str_match(const char *str1, const char *str2) {
     return i;
 }
 
-static int xcmd_del_char(void *pv) {
+static int xcmd_del_char(void* pv) {
     xcmd_display_delete_char();
     return 0;
 }
 XCMD_EXPORT_KEY(KEY_CTR_H, xcmd_del_char, "backspace")
 XCMD_EXPORT_KEY(KEY_BACKSPACE, xcmd_del_char, "delete")
 
-static int xcmd_enter(void *pv) {
-    char *cmd = xcmd_end_of_input();
+static int xcmd_enter(void* pv) {
+    char* cmd = xcmd_end_of_input();
     xcmd_print("\n\r");
     if (cmd[0]) {
         xcmd_exec(cmd);
@@ -45,7 +37,7 @@ static int xcmd_enter(void *pv) {
 XCMD_EXPORT_KEY(KEY_CTR_M, xcmd_enter, "enter")
 XCMD_EXPORT_KEY(KEY_CTR_J, xcmd_enter, "enter")
 
-static int xcmd_cursor_left(void *pv) {
+static int xcmd_cursor_left(void* pv) {
     uint16_t pos = xcmd_display_cursor_get();
     if (pos > 0) {
         pos--;
@@ -55,7 +47,7 @@ static int xcmd_cursor_left(void *pv) {
 }
 XCMD_EXPORT_KEY(KEY_LEFT, xcmd_cursor_left, "left")
 
-static int xcmd_cursor_right(void *pv) {
+static int xcmd_cursor_right(void* pv) {
     uint16_t pos = xcmd_display_cursor_get();
     pos++;
     xcmd_display_cursor_set(pos);
@@ -64,8 +56,8 @@ static int xcmd_cursor_right(void *pv) {
 XCMD_EXPORT_KEY(KEY_RIGHT, xcmd_cursor_right, "right")
 
 #if XCMD_HISTORY_MAX_NUM
-static int xcmd_history_dw(void *pv) {
-    char *line = xcmd_history_next();
+static int xcmd_history_dw(void* pv) {
+    char* line = xcmd_history_next(); /* 向更新的方向回退 */
     xcmd_display_clear();
     if (line) {
         xcmd_display_print(line);
@@ -74,8 +66,8 @@ static int xcmd_history_dw(void *pv) {
 }
 XCMD_EXPORT_KEY(KEY_DW, xcmd_history_dw, "down")
 
-static int xcmd_history_up(void *pv) {
-    char *line = xcmd_history_prev();
+static int xcmd_history_up(void* pv) {
+    char* line = xcmd_history_prev(); /* 向更旧的方向翻阅 */
     if (line) {
         xcmd_display_clear();
         xcmd_display_print(line);
@@ -85,13 +77,13 @@ static int xcmd_history_up(void *pv) {
 XCMD_EXPORT_KEY(KEY_UP, xcmd_history_up, "up")
 #endif
 
-static int xcmd_auto_completion(void *pv) {
-    xcmd_t *match_cmd_first = NULL;
+static int xcmd_auto_completion(void* pv) {
+    xcmd_t* match_cmd_first = NULL;
     uint16_t match_num = 0;
     uint16_t match_subscript_min = 0;
-    char *display_line = xcmd_display_get();
+    char* display_line = xcmd_display_get();
     uint16_t cursor_pos = xcmd_display_cursor_get();
-    xcmd_t *p = NULL;
+    xcmd_t* p = NULL;
     XCMD_CMD_FOR_EACH(p) {
         if (strncmp(display_line, p->name, cursor_pos) == 0) {
             if (match_num == 0) {
