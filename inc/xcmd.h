@@ -121,16 +121,20 @@ int xcmd_unregister_key(xcmder_t* xcmder, char* key);
 #ifdef ENABLE_XCMD_EXPORT
 /* 导出段是链接期生成的全局单份表, 多实例共享: 每个实例的命令/按键遍历都
  * 走这张公共表, 实例间无差异; 按注册表模式使用时命令/按键才按实例隔离 */
-#define XCMD_EXPORT_CMD(_name, _func, _help) XCMD_USED const xcmd_t XCMD_SECTION("_xcmd_cmd_list") \
-                                                 xcmd_cmd_##_name = {                              \
-                                                     .name = #_name,                               \
-                                                     .func = _func,                                \
-                                                     .help = _help};
-#define XCMD_EXPORT_KEY(_key, _func, _help) XCMD_USED const xcmd_key_t XCMD_SECTION("_xcmd_key_list") \
-                                                xcmd_key_##_key = {                                   \
-                                                    .key = _key,                                      \
-                                                    .func = _func,                                    \
-                                                    .help = _help};
+#define XCMD_EXPORT_CMD(_name, _func, _help)              \
+    XCMD_USED const xcmd_t XCMD_SECTION("_xcmd_cmd_list") \
+        xcmd_cmd_##_name = {                              \
+            .name = #_name,                               \
+            .func = _func,                                \
+            .help = _help,                                \
+    };
+#define XCMD_EXPORT_KEY(_key, _func, _help)                   \
+    XCMD_USED const xcmd_key_t XCMD_SECTION("_xcmd_key_list") \
+        xcmd_key_##_key = {                                   \
+            .key = _key,                                      \
+            .func = _func,                                    \
+            .help = _help,                                    \
+    };
 /* 导出段起止地址符号：
  * 链接器必须能提供两个导出段 "_xcmd_cmd_list"/"_xcmd_key_list" 的首尾地址。
  * 各工具链的取法不同，但都不需要手工修改 lds/sct 来定义起止符号：
@@ -145,19 +149,19 @@ extern const xcmd_t _xcmd_cmd_list$$Base;
 extern const xcmd_t _xcmd_cmd_list$$Limit;
 extern const xcmd_key_t _xcmd_key_list$$Base;
 extern const xcmd_key_t _xcmd_key_list$$Limit;
-#define XCMD_CMD_FOR_EACH(xcmder, pos) for ((pos) = (xcmd_t*)&_xcmd_cmd_list$$Base; \
-                                            (pos) < (xcmd_t*)&_xcmd_cmd_list$$Limit; ++(pos))
-#define XCMD_KEY_FOR_EACH(xcmder, pos) for ((pos) = (xcmd_key_t*)&_xcmd_key_list$$Base; \
-                                            (pos) < (xcmd_key_t*)&_xcmd_key_list$$Limit; ++(pos))
+#define XCMD_CMD_FOR_EACH(xcmder, pos) \
+    for ((pos) = (xcmd_t*)&_xcmd_cmd_list$$Base; (pos) < (xcmd_t*)&_xcmd_cmd_list$$Limit; ++(pos))
+#define XCMD_KEY_FOR_EACH(xcmder, pos) \
+    for ((pos) = (xcmd_key_t*)&_xcmd_key_list$$Base; (pos) < (xcmd_key_t*)&_xcmd_key_list$$Limit; ++(pos))
 #elif defined(__GNUC__)
 extern const xcmd_t __start__xcmd_cmd_list;
 extern const xcmd_t __stop__xcmd_cmd_list;
 extern const xcmd_key_t __start__xcmd_key_list;
 extern const xcmd_key_t __stop__xcmd_key_list;
-#define XCMD_CMD_FOR_EACH(xcmder, pos) for ((pos) = (xcmd_t*)&__start__xcmd_cmd_list; \
-                                            (pos) < (xcmd_t*)&__stop__xcmd_cmd_list; ++(pos))
-#define XCMD_KEY_FOR_EACH(xcmder, pos) for ((pos) = (xcmd_key_t*)&__start__xcmd_key_list; \
-                                            (pos) < (xcmd_key_t*)&__stop__xcmd_key_list; ++(pos))
+#define XCMD_CMD_FOR_EACH(xcmder, pos) \
+    for ((pos) = (xcmd_t*)&__start__xcmd_cmd_list; (pos) < (xcmd_t*)&__stop__xcmd_cmd_list; ++(pos))
+#define XCMD_KEY_FOR_EACH(xcmder, pos) \
+    for ((pos) = (xcmd_key_t*)&__start__xcmd_key_list; (pos) < (xcmd_key_t*)&__stop__xcmd_key_list; ++(pos))
 #else
 #error "ENABLE_XCMD_EXPORT: unsupported compiler, please define the section start/end symbols or use command table mode"
 #endif
